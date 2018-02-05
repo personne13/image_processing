@@ -17,7 +17,6 @@
 #include <bcl.h>
 
 #define D 3
-#define FLOAT_MIN 0//TODO : Correct it
 
 void product_matrix_vector(float matrix[D][D], float vector[D], float res[D]);
 void print_matrix(float matrix[D][D]);
@@ -134,16 +133,13 @@ void fill_img_from_buffer(pnm p, float *buf){
 
 void apply_log_buffer(float *buf, int size){
   for(int i = 0; i < size * 3; i++){
-    if(buf[i] <= 0)
-      buf[i] = FLOAT_MIN;
-    else
-      buf[i] = log10(buf[i]);
+      buf[i] = log10(buf[i] + 1);
   }
 }
 
 void apply_exp_buffer(float *buf, int size){
   for(int i = 0; i < size * 3; i++){
-    buf[i] = powf(10, buf[i]);
+    buf[i] = powf(10, buf[i]) - 1;
   }
 }
 
