@@ -93,7 +93,7 @@ void print_vector(float vector[D]){
   printf(")\n");
 }
 
-float center_float_value(float min, float max, float value){//TODO : normalize
+float center_float_value(float min, float max, float value){
   if(value < min)
     value = min;
   else if(value > max)
@@ -282,7 +282,6 @@ process(char *ims, char *imt, char* imd){
 
   for(int i = 0; i < D; i++){
     apply_add_value_buffer(buf_src, -mean_lab_ims[i], i, w_src * h_src);
-    //apply_add_value_buffer(buf_src, mean_lab_ims[i], i, w_src * h_src);
     apply_mul_value_buffer(buf_src, sd_lab_imt[i] / sd_lab_ims[i], i, w_src * h_src);
     apply_add_value_buffer(buf_src, mean_lab_imt[i], i, w_src * h_src);
   }
