@@ -226,8 +226,8 @@ void normalize(int max, int min, float *buf, int l){
 
 void
 process(char *ims, char *imt, char* imd){
-  pnm img_src = pnm_load(imt);
-  pnm img_t = pnm_load(ims);
+  pnm img_t = pnm_load(imt);
+  pnm img_src = pnm_load(ims);
 
   int w_src = pnm_get_width(img_src);
   int h_src = pnm_get_height(img_src);
@@ -235,19 +235,14 @@ process(char *ims, char *imt, char* imd){
   int w_t = pnm_get_width(img_t);
   int h_t = pnm_get_height(img_t);
 
-  pnm img_dst = pnm_new(w_src, h_src, PnmRawPpm);
+  pnm img_dst = pnm_new(w_t, h_t, PnmRawPpm);
   float *buf_src = malloc(w_src * h_src * 3 * sizeof(float));
-  float *buf_t = malloc(pnm_get_width(img_t) * pnm_get_height(img_t)  * 3 * sizeof(float));
+  float *buf_t = malloc(w_t * h_t  * 3 * sizeof(float));
 
   if(!buf_src || !buf_t){
     fprintf(stderr, "Error : cannot allocate buffer memory\n");
     exit(EXIT_FAILURE);
   }
-
-  float mean_lab_ims[D];
-  float mean_lab_imt[D];
-  float sd_lab_ims[D];
-  float sd_lab_imt[D];
 
   fill_buffer_from_img(img_src, buf_src);
   fill_buffer_from_img(img_t, buf_t);
@@ -262,24 +257,12 @@ process(char *ims, char *imt, char* imd){
   apply_log_buffer(buf_t, w_t * h_t);
   transform_buf(img_t, buf_t, LMS2LAB);
 
-  for(int i = 0; i < D; i++){
-    mean_lab_ims[i] = get_mean_buffer(buf_src, w_src * h_src, i);
-    mean_lab_imt[i] = get_mean_buffer(buf_t, w_t * h_t, i);
-    sd_lab_ims[i] = get_standard_deviation_buffer(buf_src, w_src * h_src, i, mean_lab_ims[i]);
-    sd_lab_imt[i] = get_standard_deviation_buffer(buf_t, w_t * h_t, i, mean_lab_imt[i]);
-  }
 
-  for(int i = 0; i < D; i++){
-    apply_add_value_buffer(buf_src, -mean_lab_ims[i], i, w_src * h_src);
-    apply_mul_value_buffer(buf_src, sd_lab_imt[i] / sd_lab_ims[i], i, w_src * h_src);
-    apply_add_value_buffer(buf_src, mean_lab_imt[i], i, w_src * h_src);
-  }
+  transform_buf(img_t, buf_t, LAB2LMS);
+  apply_exp_buffer(buf_t, w_t * h_t);
+  transform_buf(img_t, buf_t, LMS2RGB);
 
-  transform_buf(img_src, buf_src, LAB2LMS);
-  apply_exp_buffer(buf_src, w_src * h_src);
-  transform_buf(img_src, buf_src, LMS2RGB);
-
-  fill_img_from_buffer(img_dst, buf_src);
+  fill_img_from_buffer(img_dst, buf_t);
 
   pnm_save(img_dst, PnmRawPpm, imd);
 
