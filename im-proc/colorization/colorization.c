@@ -235,6 +235,7 @@ process(char *ims, char *imt, char* imd){
   int w_t = pnm_get_width(img_t);
   int h_t = pnm_get_height(img_t);
 
+  //pnm img_sample = pnm_new(200, )
   pnm img_dst = pnm_new(w_t, h_t, PnmRawPpm);
   float *buf_src = malloc(w_src * h_src * 3 * sizeof(float));
   float *buf_t = malloc(w_t * h_t  * 3 * sizeof(float));
@@ -256,6 +257,16 @@ process(char *ims, char *imt, char* imd){
   transform_buf(img_t, buf_t, RGB2LMS);
   apply_log_buffer(buf_t, w_t * h_t);
   transform_buf(img_t, buf_t, LMS2LAB);
+
+  /*Algorithme :
+  -Transformer les deux images en lab
+  -Générer un echantillonnage de l'image colorée (calcul de l'écart type puis compression)
+  -calculer l'écart-type du facteur l de chaque pixel des images en fonction de leur voisinage
+  -Pour chaque pixel de l'image grise, trouver le pixel de l'image coloré adapté
+  -Remplacer les composantes alpha et beta du pixel de l'image en niveau de gris par
+    celles de son pixel coloré correspondant
+  -Transformer l'image vers rgb, puis sauvegarder
+  */
 
 
   transform_buf(img_t, buf_t, LAB2LMS);
