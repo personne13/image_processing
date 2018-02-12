@@ -6,6 +6,15 @@
 #include <bcl.h>
 
 #define D 3
+#define NB_SAMPLE 200
+
+typedef struct Sample Sample;
+struct Sample{
+  float l;
+  float a;
+  float b;
+  float standard_dev;
+};
 
 void product_matrix_vector(float matrix[D][D], float vector[D], float res[D]);
 void print_matrix(float matrix[D][D]);
@@ -224,6 +233,22 @@ void normalize(int max, int min, float *buf, int l){
   }
 }
 
+void fill_sample_from_img(float *buf_src, Sample *sample, int size_sample, int w, int h){
+  float ratio = (float)w / h;
+  float w_n = sqrt(ratio * size_sample);
+  float h_n = sqrt(size_sample / ratio);
+
+  printf("%f %f\n", w_n, h_n);
+  /*for(int k = 0; k < size_sample; k++){
+    int i =
+  }
+  for(int i = 0; i < w; i++){
+    for(int j = 0; j < h; j++){
+      sample
+    }
+  }*/
+}
+
 void
 process(char *ims, char *imt, char* imd){
   pnm img_t = pnm_load(imt);
@@ -235,12 +260,11 @@ process(char *ims, char *imt, char* imd){
   int w_t = pnm_get_width(img_t);
   int h_t = pnm_get_height(img_t);
 
-  //pnm img_sample = pnm_new(200, )
   pnm img_dst = pnm_new(w_t, h_t, PnmRawPpm);
-  float *buf_src = malloc(w_src * h_src * 3 * sizeof(float));
-  float *buf_t = malloc(w_t * h_t  * 3 * sizeof(float));
+  float *buf_src = malloc(w_src * h_src * D * sizeof(float));
+  float *buf_t = malloc(w_t * h_t  * D * sizeof(float));
 
-  if(!buf_src || !buf_t){
+  if(!buf_src || !buf_t || !buf_standard_dev_t || !buf_sample || !buf_standard_dev_sample){
     fprintf(stderr, "Error : cannot allocate buffer memory\n");
     exit(EXIT_FAILURE);
   }
@@ -257,6 +281,10 @@ process(char *ims, char *imt, char* imd){
   transform_buf(img_t, buf_t, RGB2LMS);
   apply_log_buffer(buf_t, w_t * h_t);
   transform_buf(img_t, buf_t, LMS2LAB);
+
+  
+
+
 
   /*Algorithme :
   -Transformer les deux images en lab
