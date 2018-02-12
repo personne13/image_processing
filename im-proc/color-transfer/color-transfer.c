@@ -32,6 +32,9 @@ void apply_add_value_buffer(float *buf, float value, int canal, int size);
 void apply_mul_value_buffer(float *buf, float value, int canal, int size);
 float get_mean_buffer(float *buf, int size, int canal);
 float get_standard_deviation_buffer(float *buf, int size, int canal, float mean);
+float get_max_value(float *buf, int l);
+float get_min_value(float *buf, int l);
+void normalize(int max, int min, float *buf, int l);
 
 float RGB2LMS[D][D] = {
   {0.3811, 0.5783, 0.0402},
@@ -121,6 +124,8 @@ void fill_img_from_buffer(pnm p, float *buf){
   int w = pnm_get_width(p);
   int h = pnm_get_height(p);
 
+  normalize(255, 0, buf, w * h * 3);
+
   for(int i = 0; i < w; i++){
     for(int j = 0; j < h; j++){
       int index = get_offset_buffer(i, j, w);
@@ -192,6 +197,41 @@ void transform_buf(pnm p, float *buf, float matrix[D][D]){
         buf[index + c] = tmp_dst[c];
       }
     }
+  }
+}
+
+float get_max_value(float *buf, int l){
+  float m = 0;
+  for(int i = 0; i < l; i++){
+    if(m < buf[i])
+      m = buf[i];
+  }
+
+  return m;
+}
+
+float get_min_value(float *buf, int l){
+  float m = 255;
+  for(int i = 0; i < l; i++){
+    if(m > buf[i])
+      m = buf[i];
+  }
+
+  return m;
+}
+
+void normalize(int max, int min, float *buf, int l){
+  float max_buf = get_max_value(buf, l);
+  float min_buf = get_min_value(buf, l);
+
+  if(max_buf == min_buf){
+    printf("Error : from img : max = min\n");
+    exit(EXIT_FAILURE);
+  }
+
+  for(int i = 0; i < l; i++){
+    buf[i] = ((double)max - min) / (max_buf - min_buf) * buf[i] +
+              ((double)min * max_buf - max * min_buf) / (max_buf - min_buf);
   }
 }
 
