@@ -249,6 +249,14 @@ void fill_sample_from_img(float *buf_src, Sample *sample, int size_sample, int w
   }*/
 }
 
+void fill_buf_from_sample(Sample * sample_dst, float * buf_dst, int size_sample) {
+  for (int i = 0; i < size_sample * D; i =+ D) {
+      buf_dst[i + 0] = sample_dst[i/D].l;
+      buf_dst[i + 1] = sample_dst[i/D].a;
+      buf_dst[i + 2] = sample_dst[i/D].b;
+  }
+}
+
 void
 process(char *ims, char *imt, char* imd){
   pnm img_t = pnm_load(imt);
@@ -282,7 +290,7 @@ process(char *ims, char *imt, char* imd){
   apply_log_buffer(buf_t, w_t * h_t);
   transform_buf(img_t, buf_t, LMS2LAB);
 
-  
+
 
 
 
