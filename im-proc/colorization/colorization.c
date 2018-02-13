@@ -7,7 +7,7 @@
 #include <bcl.h>
 
 #define D 3
-#define NB_SAMPLES 256
+#define NB_SAMPLES 200
 #define SIZE_NEIGHBOORHOOD 5
 
 typedef struct Sample Sample;
@@ -40,8 +40,8 @@ void normalize(int max, int min, float *buf, int l);
 void fill_part_sample_from_buf(float *buf_src, Sample *sample, int size_sample, int w, int h);
 float get_standard_deviation_luminance_pixel(float *buf_src, int i, int j, int w, int h);
 void change_color_samples(Sample *sample_src, int size_src, Sample *sample_dst, int w, int h);
-int search_matching_pixel(Sample *sample_src, int size_src, Sample pixel);
-float compute_distance_samples(Sample s1, Sample s2);
+int search_matching_pixel(Sample *sample_src, int size_src, Sample pixel, float max_dev, float max_lum);
+float compute_distance_samples(Sample s1, Sample s2, float max_dev, float max_lum);
 
 float RGB2LMS[D][D] = {
   {0.3811, 0.5783, 0.0402},
@@ -289,7 +289,7 @@ void fill_sample_from_buf(float *buf_src, Sample *sample, int w, int h){
   }
 }
 
-void fill_part_sample_from_buf(float *buf_src, Sample *sample, int size_sample, int w, int h){
+void fill_part_sample_from_buf(float *buf_src, Sample *sample, int size_sample, int w, int h){//fill the sample tabular respecting the ratio of the initial image. Every left space in the tabular is set randomly.
   float ratio = (float)w / h;
 
   int w_n = sqrt(ratio * size_sample);
@@ -310,7 +310,7 @@ void fill_part_sample_from_buf(float *buf_src, Sample *sample, int size_sample, 
     }
   }
 
-  for(int i = w_n * h_n; i < size_sample; i++){//fill every samples
+  for(int i = w_n * h_n; i < size_sample; i++){//fill every other samples randomly
     int x = rand_a_b(0, w);
     int y = rand_a_b(0, h);
     int index_buf = get_offset_buffer(x, y, w);
@@ -332,19 +332,19 @@ void fill_buf_from_sample(float *buf, Sample *sample, int w, int h){
   }
 }
 
-float compute_distance_samples(Sample s1, Sample s2){
-  float dist_dev = fabs(s1.standard_dev - s2.standard_dev);
-  float dist_lum = fabs(s1.l - s2.l);
+float compute_distance_samples(Sample s1, Sample s2, float max_dev, float max_lum){
+  float dist_dev = (s1.standard_dev - s2.standard_dev) / max_dev;
+  float dist_lum = (s1.l - s2.l) / max_lum;
 
-  return 0.5 * dist_dev + 0.5 * dist_lum;
+  return pow(dist_dev, 2) + pow(dist_lum, 2);
 }
 
-int search_matching_pixel(Sample *sample_src, int size_src, Sample pixel){
+int search_matching_pixel(Sample *sample_src, int size_src, Sample pixel, float max_dev, float max_lum){
   float min_dist = -1;
   int current_index = 0;
 
   for(int i = 0; i < size_src; i++){
-    float current_dist = compute_distance_samples(sample_src[i], pixel);
+    float current_dist = compute_distance_samples(sample_src[i], pixel, max_dev, max_lum);
     if(min_dist == -1 || current_dist < min_dist){
       min_dist = current_dist;
       current_index = i;
@@ -355,8 +355,29 @@ int search_matching_pixel(Sample *sample_src, int size_src, Sample pixel){
 }
 
 void change_color_samples(Sample *sample_src, int size_src, Sample *sample_dst, int w, int h){
+  float max_dev = 0;
+  float max_lum = 0;
+
+  for(int i = 0; i < size_src; i++){
+    if(sample_src[i].l > max_lum){
+      max_lum = sample_src[i].l;
+    }
+    if(sample_src[i].standard_dev > max_dev){
+      max_dev = sample_src[i].standard_dev;
+    }
+  }
+
   for(int i = 0; i < w * h; i++){
-    int index = search_matching_pixel(sample_src, size_src, sample_dst[i]);
+    if(sample_dst[i].l > max_lum){
+      max_lum = sample_dst[i].l;
+    }
+    if(sample_dst[i].standard_dev > max_dev){
+      max_dev = sample_dst[i].standard_dev;
+    }
+  }
+
+  for(int i = 0; i < w * h; i++){
+    int index = search_matching_pixel(sample_src, size_src, sample_dst[i], max_dev, max_lum);
     sample_dst[i].a = sample_src[index].a;
     sample_dst[i].b = sample_src[index].b;
   }
