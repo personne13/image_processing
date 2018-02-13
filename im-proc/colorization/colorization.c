@@ -362,14 +362,6 @@ void change_color_samples(Sample *sample_src, int size_src, Sample *sample_dst, 
   }
 }
 
-void fill_buf_from_sample(Sample * sample_dst, float * buf_dst, int size_sample) {
-  for (int i = 0; i < size_sample * D; i =+ D) {
-      buf_dst[i + 0] = sample_dst[i/D].l;
-      buf_dst[i + 1] = sample_dst[i/D].a;
-      buf_dst[i + 2] = sample_dst[i/D].b;
-  }
-}
-
 void
 process(char *ims, char *imt, char* imd){
   pnm img_t = pnm_load(imt);
