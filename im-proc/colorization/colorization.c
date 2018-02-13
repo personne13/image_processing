@@ -8,7 +8,7 @@
 
 #define D 3
 #define NB_SAMPLES 200
-#define SIZE_NEIGHBOORHOOD 5
+#define SIZE_NEIGHBOORHOOD 5//has to be odd
 
 typedef struct Sample Sample;
 struct Sample{
@@ -246,7 +246,7 @@ void normalize(int max, int min, float *buf, int l){
   }
 }
 
-float get_standard_deviation_luminance_pixel(float *buf_src, int i, int j, int w, int h){//mean of standard deviation of its neighboors
+float get_standard_deviation_luminance_pixel(float *buf_src, int i, int j, int w, int h){
   float sum = 0;
   float sum_dev = 0;
   float mean = 0;
@@ -297,8 +297,14 @@ void fill_part_sample_from_buf(float *buf_src, Sample *sample, int size_sample, 
 
   for(int i = 0; i < w_n; i++){
     for(int j = 0; j < h_n; j++){
-      int x = (i / w_n) * w;
-      int y = (j / h_n) * h;
+      int x = (i / w_n) * w + rand_a_b(0, w / w_n);//rand to choose a random point in the square.
+      int y = (j / h_n) * h + rand_a_b(0, h / h_n);
+      if(x >= w){
+        x = w - 1;
+      }
+      if(y >= h){
+        y = h - 1;
+      }
       int index_sample = j * w_n + i;
       int index_buf = get_offset_buffer(x, y, w);
       sample[index_sample].i = x;
