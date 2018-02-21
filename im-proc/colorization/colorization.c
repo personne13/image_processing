@@ -7,7 +7,7 @@
 #include <bcl.h>
 
 #define D 3
-#define NB_SAMPLES 200
+#define NB_SAMPLES 1000
 #define SIZE_NEIGHBOORHOOD 5//has to be odd
 
 typedef struct Sample Sample;
@@ -37,7 +37,14 @@ float get_standard_deviation_buffer(float *buf, int size, int canal, float mean)
 float get_max_value(float *buf, int l);
 float get_min_value(float *buf, int l);
 void normalize(int max, int min, float *buf, int l);
+Sample get_sample(int i, int j, float l, float a, float b, float standard_dev);
+
 void fill_part_sample_from_buf(float *buf_src, Sample *sample, int size_sample, int w, int h);
+//fill the sample tabular respecting the ratio of the initial image. Every left space in the tabular is set randomly.
+
+void fill_sample_from_buf(float *buf_src, Sample *sample, int w, int h);
+//fill every pixel from buf_src into sample. sample has to be an allocated w*h-sized buffer, buf_src has to conrrespond to a w * h img
+
 float get_standard_deviation_luminance_pixel(float *buf_src, int i, int j, int w, int h);
 void change_color_samples(Sample *sample_src, int size_src, Sample *sample_dst, int w, int h);
 int search_matching_pixel(Sample *sample_src, int size_src, Sample pixel, float max_dev, float max_lum);
@@ -231,6 +238,19 @@ float get_min_value(float *buf, int l){
   return m;
 }
 
+Sample get_sample(int i, int j, float l, float a, float b, float standard_dev){
+  Sample res;
+
+  res.i = i;
+  res.j = j;
+  res.l = l;
+  res.a = a;
+  res.b = b;
+  res.standard_dev = standard_dev;
+
+  return res;
+}
+
 void normalize(int max, int min, float *buf, int l){
   float max_buf = get_max_value(buf, l);
   float min_buf = get_min_value(buf, l);
@@ -256,7 +276,8 @@ float get_standard_deviation_luminance_pixel(float *buf_src, int i, int j, int w
   for(int x = i - SIZE_NEIGHBOORHOOD / 2; x <= i + SIZE_NEIGHBOORHOOD / 2; x++){
     for(int y = j - SIZE_NEIGHBOORHOOD / 2; y <= j + SIZE_NEIGHBOORHOOD / 2; y++){
       if(i >= 0 && i < w &&
-          j >= 0 && j < h){
+          j >= 0 && j < h &&
+          nb_neighboors < SIZE_NEIGHBOORHOOD * SIZE_NEIGHBOORHOOD){
         int index = get_offset_buffer(i, j, w);
         tab[nb_neighboors] = buf_src[index];
         sum += tab[nb_neighboors];
@@ -271,7 +292,7 @@ float get_standard_deviation_luminance_pixel(float *buf_src, int i, int j, int w
     sum_dev += pow(mean - tab[k], 2);
   }
 
-  return sqrt(sum_dev / nb_neighboors);
+  return sum_dev / nb_neighboors;//sqrt is not important.
 }
 
 void fill_sample_from_buf(float *buf_src, Sample *sample, int w, int h){
@@ -279,17 +300,14 @@ void fill_sample_from_buf(float *buf_src, Sample *sample, int w, int h){
     for(int j = 0; j < h; j++){
       int index_sample = j * w + i;
       int index_buf = get_offset_buffer(i, j, w);
-      sample[index_sample].i = i;
-      sample[index_sample].j = j;
-      sample[index_sample].l = buf_src[index_buf];
-      sample[index_sample].a = buf_src[index_buf + 1];
-      sample[index_sample].b = buf_src[index_buf + 2];
-      sample[index_sample].standard_dev = get_standard_deviation_luminance_pixel(buf_src, i, j, w, h);
+      float standard_dev = get_standard_deviation_luminance_pixel(buf_src, i, j, w, h);
+      sample[index_sample] = get_sample(i, j, buf_src[index_buf], buf_src[index_buf + 1], buf_src[index_buf + 2], standard_dev);
     }
   }
 }
 
-void fill_part_sample_from_buf(float *buf_src, Sample *sample, int size_sample, int w, int h){//fill the sample tabular respecting the ratio of the initial image. Every left space in the tabular is set randomly.
+void fill_part_sample_from_buf(float *buf_src, Sample *sample, int size_sample, int w, int h){
+  int current_index_sample = 0;
   float ratio = (float)w / h;
 
   int w_n = sqrt(ratio * size_sample);
@@ -305,27 +323,19 @@ void fill_part_sample_from_buf(float *buf_src, Sample *sample, int size_sample, 
       if(y >= h){
         y = h - 1;
       }
-      int index_sample = j * w_n + i;
       int index_buf = get_offset_buffer(x, y, w);
-      sample[index_sample].i = x;
-      sample[index_sample].j = y;
-      sample[index_sample].l = buf_src[index_buf];
-      sample[index_sample].a = buf_src[index_buf + 1];
-      sample[index_sample].b = buf_src[index_buf + 2];
-      sample[index_sample].standard_dev = get_standard_deviation_luminance_pixel(buf_src, x, y, w, h);
+      float standard_dev = get_standard_deviation_luminance_pixel(buf_src, x, y, w, h);
+      sample[current_index_sample] = get_sample(x, y, buf_src[index_buf], buf_src[index_buf + 1], buf_src[index_buf + 2], standard_dev);
+      current_index_sample++;
     }
   }
 
-  for(int i = w_n * h_n; i < size_sample; i++){//fill every other samples randomly
+  for(int i = current_index_sample; i < size_sample; i++){//fill every other samples randomly
     int x = rand_a_b(0, w);
     int y = rand_a_b(0, h);
     int index_buf = get_offset_buffer(x, y, w);
-    sample[i].i = x;
-    sample[i].j = y;
-    sample[i].l = buf_src[index_buf];
-    sample[i].a = buf_src[index_buf + 1];
-    sample[i].b = buf_src[index_buf + 2];
-    sample[i].standard_dev = get_standard_deviation_luminance_pixel(buf_src, x, y, w, h);
+    float standard_dev = get_standard_deviation_luminance_pixel(buf_src, x, y, w, h);
+    sample[i] = get_sample(x, y, buf_src[index_buf], buf_src[index_buf + 1], buf_src[index_buf + 2], standard_dev);
   }
 }
 
@@ -339,10 +349,11 @@ void fill_buf_from_sample(float *buf, Sample *sample, int w, int h){
 }
 
 float compute_distance_samples(Sample s1, Sample s2, float max_dev, float max_lum){
+  int ratio = 0.5;
   float dist_dev = (s1.standard_dev - s2.standard_dev) / max_dev;
   float dist_lum = (s1.l - s2.l) / max_lum;
 
-  return pow(dist_dev, 2) + pow(dist_lum, 2);
+  return ratio * pow(dist_dev, 2) + (1 - ratio) * pow(dist_lum, 2);
 }
 
 int search_matching_pixel(Sample *sample_src, int size_src, Sample pixel, float max_dev, float max_lum){
