@@ -7,13 +7,13 @@
 #include <bcl.h>
 
 #define D 3
-#define NB_SAMPLES 1000
+#define NB_SAMPLES 200
 #define SIZE_NEIGHBOORHOOD 5//has to be odd
 
 typedef struct Sample Sample;
 struct Sample{
-  float i;
-  float j;
+  int i;
+  int j;
   float l;
   float a;
   float b;
@@ -275,10 +275,10 @@ float get_standard_deviation_luminance_pixel(float *buf_src, int i, int j, int w
 
   for(int x = i - SIZE_NEIGHBOORHOOD / 2; x <= i + SIZE_NEIGHBOORHOOD / 2; x++){
     for(int y = j - SIZE_NEIGHBOORHOOD / 2; y <= j + SIZE_NEIGHBOORHOOD / 2; y++){
-      if(i >= 0 && i < w &&
-          j >= 0 && j < h &&
+      if(x >= 0 && x < w &&
+          y >= 0 && y < h &&
           nb_neighboors < SIZE_NEIGHBOORHOOD * SIZE_NEIGHBOORHOOD){
-        int index = get_offset_buffer(i, j, w);
+        int index = get_offset_buffer(x, y, w);
         tab[nb_neighboors] = buf_src[index];
         sum += tab[nb_neighboors];
         nb_neighboors++;
@@ -315,8 +315,8 @@ void fill_part_sample_from_buf(float *buf_src, Sample *sample, int size_sample, 
 
   for(int i = 0; i < w_n; i++){
     for(int j = 0; j < h_n; j++){
-      int x = (i / w_n) * w + rand_a_b(0, w / w_n);//rand to choose a random point in the square.
-      int y = (j / h_n) * h + rand_a_b(0, h / h_n);
+      int x = ((float)i / w_n) * w + rand_a_b(0, w / w_n);//rand to choose a random point in the square.
+      int y = ((float)j / h_n) * h + rand_a_b(0, h / h_n);
       if(x >= w){
         x = w - 1;
       }
@@ -333,6 +333,8 @@ void fill_part_sample_from_buf(float *buf_src, Sample *sample, int size_sample, 
   for(int i = current_index_sample; i < size_sample; i++){//fill every other samples randomly
     int x = rand_a_b(0, w);
     int y = rand_a_b(0, h);
+    x = 0;
+    y = 0;
     int index_buf = get_offset_buffer(x, y, w);
     float standard_dev = get_standard_deviation_luminance_pixel(buf_src, x, y, w, h);
     sample[i] = get_sample(x, y, buf_src[index_buf], buf_src[index_buf + 1], buf_src[index_buf + 2], standard_dev);
@@ -349,7 +351,7 @@ void fill_buf_from_sample(float *buf, Sample *sample, int w, int h){
 }
 
 float compute_distance_samples(Sample s1, Sample s2, float max_dev, float max_lum){
-  int ratio = 0.5;
+  float ratio = 0.5;
   float dist_dev = (s1.standard_dev - s2.standard_dev) / max_dev;
   float dist_lum = (s1.l - s2.l) / max_lum;
 
