@@ -4,6 +4,14 @@
 
 #include <fft.h>
 
+#define SHIFT(val, i, rows, cols) int x = i%cols;\
+                        int y = (i - x) / rows;\
+                        if ((x+y) % 2 != 0) {\
+                            val = -1 * val;\
+                        }
+
+
+
 fftw_complex *
 forward(int rows, int cols, unsigned short* g_img)
 {
@@ -17,6 +25,10 @@ forward(int rows, int cols, unsigned short* g_img)
 
   for(int i = 0; i < rows * cols; i++){
     in[i] = g_img[i];
+    int x = i % cols;
+    int y = (i - x) / rows;
+    if((x + y) % 2 != 0)
+      in[i] *= -1;
   }
 
   fftw_plan plan = fftw_plan_dft_2d(rows, cols, in, out, FFTW_FORWARD, FFTW_ESTIMATE);
@@ -45,6 +57,12 @@ backward(int rows, int cols, fftw_complex* freq_repr)
 
   for(int i = 0; i < rows * cols; i++){
     float tmp = 1.0 / (rows * cols) * creal(out[i]);
+
+    int x = i % cols;
+    int y = (i - x) / rows;
+    if((x + y) % 2 != 0)
+      tmp *= -1;
+
     if(tmp > 255)
       res[i] = 255;
     else if(tmp < 0)

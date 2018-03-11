@@ -80,7 +80,7 @@ test_reconstruction(char* name)
 {
   fprintf(stderr, "test_reconstruction: ");
 
-  char extension[8] = "FB-ASPS";
+  char extension[9] = "FB-ASPS-";
 
   if(strlen(name) > SIZE_BUFFER - strlen(extension))
     fprintf(stderr, "%s : name too long (%d max)\n", name, SIZE_BUFFER);
@@ -142,11 +142,9 @@ void transform_buffer(float *buf, int size){//non linear normalization
   }
 }
 
-void copy_translate_buffer(float *buf_src, unsigned short *buf_dst, int rows, int cols){
-  for(int i = 0; i < rows; i++){
-    for(int j = 0; j < cols; j++){
-      buf_dst[i * (cols - 1) + j] = buf_src[((i + rows / 2) % rows) * (cols - 1) + j];
-    }
+void copy_buffer(float *buf_src, unsigned short *buf_dst, int rows, int cols){
+  for(int i = 0; i < rows * cols; i++){
+    buf_dst[i] = buf_src[i];
   }
 }
 
@@ -195,8 +193,8 @@ test_display(char* name)
 
   transform_buffer(as, rows * cols);
 
-  copy_translate_buffer(as, as_short, rows, cols);
-  copy_translate_buffer(ps, ps_short, rows, cols);
+  copy_buffer(as, as_short, rows, cols);
+  copy_buffer(ps, ps_short, rows, cols);
 
   pnm_set_channel(img_dest_p, ps_short, PnmRed);
   pnm_set_channel(img_dest_p, ps_short, PnmGreen);
@@ -220,6 +218,10 @@ test_display(char* name)
   fprintf(stderr, "OK\n");
 }
 
+int get_index_buffer(int i, int j, int cols){
+  return i * (cols - 1) + j;
+}
+
 void add_freq(float *as, int rows, int cols){
   float m = 0;
   int freq = 8;
@@ -231,10 +233,10 @@ void add_freq(float *as, int rows, int cols){
 
   float factor_add = 0.25 * m;
 
-  as[freq] += factor_add;
-  as[(rows - 1) * (cols - 1) + (cols - freq - 1)] += factor_add;
-  as[(rows - freq - 1) * (cols - 1) - freq - 1] += factor_add;
-  as[(freq - 1) * (cols - 1) + cols + freq - 1] += factor_add;
+  as[get_index_buffer(rows / 2 + 1 + freq, freq + 1, cols)] += factor_add;
+  as[get_index_buffer(rows / 2 + 1, -freq + 1, cols)] += factor_add;
+  as[get_index_buffer(rows / 2 + 1 - freq, -freq + 1, cols)] += factor_add;
+  as[get_index_buffer(rows / 2 + 1, freq + 1, cols)] += factor_add;
 }
 
 /**
@@ -282,7 +284,7 @@ test_add_frequencies(char* name)
   add_freq(as, rows, cols);
   spectra2freq(rows, cols, as, ps, img_forw);
   transform_buffer(as, rows * cols);
-  copy_translate_buffer(as, as_short, rows, cols);
+  copy_buffer(as, as_short, rows, cols);
   unsigned short *img_back = backward(rows, cols, img_forw);
 
   pnm_set_channel(img_dest_freq, img_back, PnmRed);
