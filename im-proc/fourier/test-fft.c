@@ -221,7 +221,7 @@ test_display(char* name)
 }
 
 void add_freq(float *as, int rows, int cols){
-  float m;
+  float m = 0;
   int freq = 8;
 
   for(int i = 0; i < rows * cols; i++){
@@ -231,7 +231,6 @@ void add_freq(float *as, int rows, int cols){
 
   float factor_add = 0.25 * m;
 
-  as[0] += factor_add;
   as[freq] += factor_add;
   as[(rows - 1) * (cols - 1) + (cols - freq - 1)] += factor_add;
   as[(rows - freq - 1) * (cols - 1) - freq - 1] += factor_add;
@@ -273,7 +272,7 @@ test_add_frequencies(char* name)
   float *ps = malloc(rows * cols * sizeof(float));
   unsigned short *as_short = malloc(rows * cols * sizeof(float));
 
-  if(!as || !ps){
+  if(!as || !ps || !as_short){
     fprintf(stderr, "Error malloc : test_reconstruction (%dx%d)\n", rows, cols);
     exit(EXIT_FAILURE);
   }
